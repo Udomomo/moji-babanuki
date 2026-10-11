@@ -1,7 +1,7 @@
 /**
  * もじババぬき - LINE Messaging API Webhook (Google Apps Script)
  *
- * 送信されたひらがなから2個ペアになる文字を取り除いた「ババ抜き結果」と、
+ * 送信された文字 (ひらがな・カタカナ・漢字) から2個ペアになる文字を取り除いた「ババ抜き結果」と、
  * ちょうど1回だけ登場した「一度のみ登場文字」を返す。
  *
  * 事前準備:
@@ -9,11 +9,11 @@
  */
 
 var LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply';
-var ERROR_MESSAGE = 'エラー: ひらがなで入力してください';
+var ERROR_MESSAGE = 'エラー: ひらがな・カタカナ・漢字で入力してください';
 var NONE_MESSAGE = '(のこりなし)';
 
-// ひらがな (ぁ〜ゖ) と長音 (ー) のみ
-var HIRAGANA_PATTERN = /^[ぁ-ゖー]$/;
+// ひらがな (ぁ〜ゖ)、全角カタカナ (ァ〜ヺ)、長音 (ー)、漢字 (々〇などを含む) と 〆
+var ALLOWED_PATTERN = /^(?:[\u3041-\u3096\u30A1-\u30FA\u30FC\u3006]|\p{Script=Han})$/u;
 // 半角・全角スペース、タブ、改行
 var WHITESPACE_PATTERN = /[ 　\t\r\n]/g;
 
@@ -37,7 +37,7 @@ function doPost(e) {
 
 /**
  * 入力を検証して返信テキストを組み立てる。
- * ひらがな以外が含まれればエラーメッセージを返す。
+ * 受け付けない文字が含まれればエラーメッセージを返す。
  */
 function buildReply(text) {
   var chars = toChars(text);
@@ -49,12 +49,12 @@ function buildReply(text) {
 }
 
 /**
- * 空白・改行を除去して1文字ずつの配列にする。ひらがな以外が含まれれば null。
+ * 空白・改行を除去して1文字ずつの配列にする。受け付けない文字が含まれれば null。
  */
 function toChars(text) {
   var chars = Array.from(String(text).replace(WHITESPACE_PATTERN, ''));
   for (var i = 0; i < chars.length; i++) {
-    if (!HIRAGANA_PATTERN.test(chars[i])) {
+    if (!ALLOWED_PATTERN.test(chars[i])) {
       return null;
     }
   }
